@@ -1,0 +1,5 @@
+void try (){
+int data = 20;
+while (data <= 100 )
+data = data + data;
+}
