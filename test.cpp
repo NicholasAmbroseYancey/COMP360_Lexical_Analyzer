@@ -1,5 +1,8 @@
-// front.cpp - a lexical analyzer system for simple
-//             arithmetic expressions (C++ translation)
+// COMP 360 Programming Languages - Project 1
+// Lexical Analyzer and Parser
+// Created by: Ambrose Yancey, Ryan Bolt, Jason Boyce
+// Date: 9/28/2025
+
 
 #include <iostream>
 #include <fstream>
@@ -9,7 +12,6 @@
 
 using namespace std;
 
-/* Global declarations */
 // Variables
 int charClass;
 char lexeme[100];
@@ -19,14 +21,12 @@ int token;
 int nextToken;
 ifstream inFile;
 
-// Function declarations
+// Functions
 void addChar();
 void getChar();
 void getNonBlank();
 int lex();
 int lookup(char ch);
-
-// *** NEW: Parser function declarations ***
 bool parseProgram();
 bool parseDeclares();
 bool parseLoop();
@@ -40,13 +40,11 @@ bool isKeyword(string lexeme);
 bool isConst(string lexeme);
 void resetParser();
 
-/* Character classes */
+// Character classes and token codes
 #define LETTER 0
 #define DIGIT 1
 #define UNKNOWN 99
 #define EOF_CHAR 98
-
-/* Token codes */
 #define INT_LIT 10
 #define IDENT 11
 #define ASSIGN_OP 20
@@ -59,18 +57,14 @@ void resetParser();
 #define COMMA 27
 #define LEFT_BRACE 28
 #define RIGHT_BRACE 29
-// *** NEW: Semicolon token ***
 #define SEMICOLON 30
-
-// *** NEW: Parser-specific tokens ***
 #define VOID_KEYWORD 31
 #define WHILE_KEYWORD 32
 #define INT_KEYWORD 33
-#define LE_OP 34  // <= operator
+#define LE_OP 34 
 #define CONST_LIT 35
 
-/******************************************************/
-
+// Appends the current character
 void addChar() {
     if (lexLen <= 98) {
         lexeme[lexLen++] = nextChar;
@@ -78,6 +72,7 @@ void addChar() {
     }
 }
 
+// Reads the next character
 void getChar() {
     if (inFile.get(nextChar)) {
         if (isalpha(nextChar))
@@ -91,14 +86,14 @@ void getChar() {
     }
 }
 
+// Skips whitespace
 void getNonBlank() {
     while (isspace(nextChar) && charClass != EOF_CHAR) {
         getChar();
     }
 }
 
-/*****************************************************/
-/* lookup - function to lookup operators, parentheses, comma, braces, and semicolon */
+// Cases for each token
 int lookup(char ch) {
     switch (ch) {
         case '(':
@@ -151,7 +146,6 @@ int lookup(char ch) {
              addChar();
              nextToken = RIGHT_BRACE;
              break;
-        // *** NEW: Semicolon case ***
         case ';':
              addChar();
              nextToken = SEMICOLON;
@@ -164,8 +158,7 @@ int lookup(char ch) {
     return nextToken;
 }
 
-/*****************************************************/
-/* lex - a simple lexical analyzer */
+// Lexical analyzer
 int lex() {
     lexLen = 0;
     getNonBlank();
@@ -209,18 +202,17 @@ int lex() {
     return nextToken;
 }
 
-/******************************************************/
-/* Parser Implementation for Project1 EBNF Grammar */
-
-// Global parser variables
+// Parser functions
 bool parseError = false;
 string errorMessage = "";
 
+// Resets the parser
 void resetParser() {
     parseError = false;
     errorMessage = "";
 }
 
+// Reports if an error has occurred
 void reportError(string message) {
     if (!parseError) {
         parseError = true;
@@ -228,9 +220,10 @@ void reportError(string message) {
     }
 }
 
+// Matches the expected token
 bool match(int expectedToken) {
     if (nextToken == expectedToken) {
-        lex(); // Get next token
+        lex();
         return true;
     } else {
         reportError("Expected token " + to_string(expectedToken) + " but found " + to_string(nextToken));
@@ -238,20 +231,20 @@ bool match(int expectedToken) {
     }
 }
 
+// Checks if the lexeme is a keyword
 bool isKeyword(string lexeme) {
     return (lexeme == "int" || lexeme == "while" || lexeme == "void");
 }
 
+// Checks if the lexeme is a constant
 bool isConst(string lexeme) {
     return (lexeme == "100" || lexeme == "20");
 }
 
+// Project 1 EBNF Grammar functions starting with <ident>
 bool parseIdent() {
-    // Handle the left recursive <ident> -> a <ident>| b<ident> … | z <ident> | e
-    // We'll implement this by checking if it's a valid identifier
     cout << "Enter <ident>" << endl;
     if (nextToken == IDENT) {
-        // Check if it starts with a letter and is valid
         string currentLexeme = string(lexeme);
         if (currentLexeme.length() > 0 && isalpha(currentLexeme[0])) {
             match(IDENT);
@@ -286,7 +279,6 @@ bool parseKeyword() {
 }
 
 bool parseAssignment() {
-    // <assignment> -> <ident> = <ident> + <ident>;
     cout << "Enter <assignment>" << endl;
     if (!parseIdent()) return false;
     if (!match(ASSIGN_OP)) return false;
@@ -299,7 +291,6 @@ bool parseAssignment() {
 }
 
 bool parseLoop() {
-    // <loop> -> <keyword> ( <ident > <= const )
     cout << "Enter <loop>" << endl;
     if (!parseKeyword()) return false;
     if (!match(LEFT_PAREN)) return false;
@@ -312,7 +303,6 @@ bool parseLoop() {
 }
 
 bool parseDeclares() {
-    // <declares> -> <keyword> <ident> = const;
     cout << "Enter <declares>" << endl;
     if (!parseKeyword()) return false;
     if (!parseIdent()) return false;
@@ -324,7 +314,6 @@ bool parseDeclares() {
 }
 
 bool parseProgram() {
-    // <program> -> <keyword> <ident> ( ) { <declares> <loop><assignment>}
     resetParser();
     cout << "Enter <program>" << endl;
     
@@ -342,18 +331,15 @@ bool parseProgram() {
     return !parseError;
 }
 
-/******************************************************/
-/* main driver */
+// Main function that runs the program
 int main() {
-    cout << "COMP 360-01 Programming Languages - Project 1" << endl;
-    cout << "Lexical Analyzer and Recursive-Descent Parser" << endl;
-    cout << "=============================================" << endl;
+    cout << "COMP 360 Programming Languages - Project 1" << endl;
     
     string filename;
     cout << "\nEnter the name of the file to parse: ";
     getline(cin, filename);
     
-    cout << "\n=== Testing with " << filename << " ===" << endl;
+    cout << "\nTesting with " << filename << "...\n" << endl;
     inFile.open(filename);
     
     if (!inFile.is_open()) {
@@ -362,11 +348,13 @@ int main() {
     }
     
     getChar();
-    lex(); // Get first token
+    lex();
 
+    // Print statements if the program is generated by the grammar or if there is an error
     if (parseProgram() && nextToken == EOF) {
         cout << "The Test Source Code is generated by the grammar" << endl;
-    } else {
+    } 
+    else {
         cout << "The Test Source Code cannot be generated by the Project1 EBNF Defined Language" << endl;
         if (parseError) {
             cout << "Error: " << errorMessage << endl;
@@ -374,6 +362,6 @@ int main() {
     }
     inFile.close();
     
-    cout << "\n=== Analysis Complete ===" << endl;
+    cout << "\nAnalysis Complete!" << endl;
     return 0;
 }
