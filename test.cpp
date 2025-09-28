@@ -34,7 +34,7 @@ bool parseAssignment();
 bool parseKeyword();
 bool parseConst();
 bool parseIdent();
-void match(int expectedToken);
+bool match(int expectedToken);
 void reportError(string message);
 bool isKeyword(string lexeme);
 bool isConst(string lexeme);
@@ -228,11 +228,13 @@ void reportError(string message) {
     }
 }
 
-void match(int expectedToken) {
+bool match(int expectedToken) {
     if (nextToken == expectedToken) {
         lex(); // Get next token
+        return true;
     } else {
         reportError("Expected token " + to_string(expectedToken) + " but found " + to_string(nextToken));
+        return false;
     }
 }
 
@@ -247,11 +249,13 @@ bool isConst(string lexeme) {
 bool parseIdent() {
     // Handle the left recursive <ident> -> a <ident>| b<ident> … | z <ident> | e
     // We'll implement this by checking if it's a valid identifier
+    cout << "Enter <ident>" << endl;
     if (nextToken == IDENT) {
         // Check if it starts with a letter and is valid
         string currentLexeme = string(lexeme);
         if (currentLexeme.length() > 0 && isalpha(currentLexeme[0])) {
             match(IDENT);
+            cout << "Exit <ident>" << endl;
             return true;
         }
     }
@@ -260,8 +264,10 @@ bool parseIdent() {
 }
 
 bool parseConst() {
+    cout << "Enter <const>" << endl;
     if (nextToken == INT_LIT && isConst(string(lexeme))) {
         match(INT_LIT);
+        cout << "Exit <const>" << endl;
         return true;
     }
     reportError("Expected constant (100 or 20) but found " + string(lexeme));
@@ -269,8 +275,10 @@ bool parseConst() {
 }
 
 bool parseKeyword() {
+    cout << "Enter <keyword>" << endl;
     if (nextToken == IDENT && isKeyword(string(lexeme))) {
         match(IDENT);
+        cout << "Exit <keyword>" << endl;
         return true;
     }
     reportError("Expected keyword (int, while, or void) but found " + string(lexeme));
@@ -279,50 +287,58 @@ bool parseKeyword() {
 
 bool parseAssignment() {
     // <assignment> -> <ident> = <ident> + <ident>;
+    cout << "Enter <assignment>" << endl;
     if (!parseIdent()) return false;
-    match(ASSIGN_OP);
+    if (!match(ASSIGN_OP)) return false;
     if (!parseIdent()) return false;
-    match(ADD_OP);
+    if (!match(ADD_OP)) return false;
     if (!parseIdent()) return false;
-    match(SEMICOLON);
+    if (!match(SEMICOLON)) return false;
+    cout << "Exit <assignment>" << endl;
     return !parseError;
 }
 
 bool parseLoop() {
     // <loop> -> <keyword> ( <ident > <= const )
+    cout << "Enter <loop>" << endl;
     if (!parseKeyword()) return false;
-    match(LEFT_PAREN);
+    if (!match(LEFT_PAREN)) return false;
     if (!parseIdent()) return false;
-    match(LE_OP);
+    if (!match(LE_OP)) return false;
     if (!parseConst()) return false;
-    match(RIGHT_PAREN);
+    if (!match(RIGHT_PAREN)) return false;
+    cout << "Exit <loop>" << endl;
     return !parseError;
 }
 
 bool parseDeclares() {
     // <declares> -> <keyword> <ident> = const;
+    cout << "Enter <declares>" << endl;
     if (!parseKeyword()) return false;
     if (!parseIdent()) return false;
-    match(ASSIGN_OP);
+    if (!match(ASSIGN_OP)) return false;
     if (!parseConst()) return false;
-    match(SEMICOLON);
+    if (!match(SEMICOLON)) return false;
+    cout << "Exit <declares>" << endl;
     return !parseError;
 }
 
 bool parseProgram() {
     // <program> -> <keyword> <ident> ( ) { <declares> <loop><assignment>}
     resetParser();
+    cout << "Enter <program>" << endl;
     
     if (!parseKeyword()) return false;
     if (!parseIdent()) return false;
-    match(LEFT_PAREN);
-    match(RIGHT_PAREN);
-    match(LEFT_BRACE);
+    if (!match(LEFT_PAREN)) return false;
+    if (!match(RIGHT_PAREN)) return false;
+    if (!match(LEFT_BRACE)) return false;
     if (!parseDeclares()) return false;
     if (!parseLoop()) return false;
     if (!parseAssignment()) return false;
-    match(RIGHT_BRACE);
+    if (!match(RIGHT_BRACE)) return false;
     
+    cout << "Exit <program>" << endl;
     return !parseError;
 }
 
@@ -333,75 +349,30 @@ int main() {
     cout << "Lexical Analyzer and Recursive-Descent Parser" << endl;
     cout << "=============================================" << endl;
     
-    // Test with first file
-    cout << "\n=== Testing with front.in (Test Source Code 1) ===" << endl;
-    inFile.open("front.in");
+    string filename;
+    cout << "\nEnter the name of the file to parse: ";
+    getline(cin, filename);
+    
+    cout << "\n=== Testing with " << filename << " ===" << endl;
+    inFile.open(filename);
     
     if (!inFile.is_open()) {
-        cerr << "ERROR - cannot open front.in" << endl;
+        cerr << "ERROR - cannot open " << filename << endl;
         return 1;
     }
     
-    cout << "Lexical Analysis:" << endl;
     getChar();
-    do {
-        lex();
-    } while (nextToken != EOF);
-    
-    inFile.close();
-    
-    // Reset for parsing
-    inFile.open("front.in");
-    if (inFile.is_open()) {
-        getChar();
-        lex(); // Get first token
-        
-        cout << "\nSyntax Analysis:" << endl;
-        if (parseProgram() && nextToken == EOF) {
-            cout << "The Test Source Code is generated by the grammar" << endl;
-        } else {
-            cout << "The Test Source Code cannot be generated by the Project1 EBNF Defined Language" << endl;
-            if (parseError) {
-                cout << "Error: " << errorMessage << endl;
-            }
+    lex(); // Get first token
+
+    if (parseProgram() && nextToken == EOF) {
+        cout << "The Test Source Code is generated by the grammar" << endl;
+    } else {
+        cout << "The Test Source Code cannot be generated by the Project1 EBNF Defined Language" << endl;
+        if (parseError) {
+            cout << "Error: " << errorMessage << endl;
         }
-        inFile.close();
     }
-    
-    // Test with second file
-    cout << "\n=== Testing with front2.in (Test Source Code 2) ===" << endl;
-    inFile.open("front2.in");
-    
-    if (!inFile.is_open()) {
-        cerr << "ERROR - cannot open front2.in" << endl;
-        return 1;
-    }
-    
-    cout << "Lexical Analysis:" << endl;
-    getChar();
-    do {
-        lex();
-    } while (nextToken != EOF);
-    
     inFile.close();
-    
-    // Reset for parsing
-    inFile.open("front2.in");
-    if (inFile.is_open()) {
-        getChar();
-        lex(); // Get first token
-        
-        cout << "\nSyntax Analysis:" << endl;
-        if (parseProgram() && nextToken == EOF) {
-            cout << "The Test Source Code is generated by the grammar" << endl;
-        } else {
-            cout << "The Test Source Code cannot be generated by the Project1 EBNF Defined Language" << endl;
-            if (parseError) {
-                cout << "Error: " << errorMessage << endl;
-            }
-        }
-        inFile.close();
-    }
     
     cout << "\n=== Analysis Complete ===" << endl;
     return 0;
